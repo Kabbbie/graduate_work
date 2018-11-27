@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Drawing.Imaging;
 
 using Emgu.CV;
 using Emgu.CV.CvEnum;
@@ -34,8 +35,8 @@ namespace testing2._0
         //int minY;
         //int maxY;
 
-        int last_yq=0;
-        int last_xq=0;
+        int last_yq;
+        int last_xq;
 
 
         #endregion
@@ -69,7 +70,7 @@ namespace testing2._0
                 {
                     Contour<Point> currentContour = contours.ApproxPoly(contours.Perimeter * 0.05, storage);
 
-                    if (contours.Area > 500 && contours.Area < 1400) //only consider contours with area greater than 700 and lesser than 1200
+                    if (contours.Area > 300 && contours.Area < 1400) //only consider contours with area greater than 700 and lesser than 1200
                     {
                         if (currentContour.Total == 4) //The contour has 4 vertices.
                         {
@@ -129,9 +130,11 @@ namespace testing2._0
                 int mY = trackBar2.Value;
                 int trX = trackBar3.Value;
                 int trY = trackBar4.Value;
+                int Opac = trackBar5.Value;
                 if (xq > 0 && yq > 0)
-                    DisplayPic(Kadr, minX, maxX, minY, maxY,mX,mY,trX,trY);
-                    
+                {
+                    DisplayPicWithOpacity(Kadr, minX, maxX, minY, maxY, mX, mY, trX, trY, Opac);
+                }
                 last_yq = yq;
                 last_xq = xq;
                 
@@ -139,6 +142,57 @@ namespace testing2._0
 
             
             ib1.Image = Kadr;
+        }
+        Bitmap SetImageOpacity(Image image, float opacity)
+        {
+            try
+            {
+                //create a Bitmap the size of the image provided  
+                Bitmap bmp = new Bitmap(image.Width, image.Height);
+
+                //create a graphics object from the image  
+                using (Graphics gfx = Graphics.FromImage(bmp))
+                {
+
+                    //create a color matrix object  
+                    ColorMatrix matrix = new ColorMatrix();
+
+                    //set the opacity  
+                    matrix.Matrix33 = opacity;
+
+                    //create image attributes  
+                    ImageAttributes attributes = new ImageAttributes();
+
+                    //set the color(opacity) of the image  
+                    attributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+
+                    //now draw the image  
+                    gfx.DrawImage(image, new Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, attributes);
+                }
+                return bmp;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return null;
+            }
+        }
+        void DisplayPicWithOpacity(Image<Bgr, Byte> frame, int startX,int endX, int startY,int endY, int multX, int multY, int transX, int transY,int Opac) {
+            Bitmap frame_bitmap = frame.Bitmap;
+
+            #region Resize
+            int lengX = (endX - startX) * multX;
+            int lengY = (endY - startY) * multY;
+            #endregion
+            Size size = new Size(lengX, lengY);
+            Bitmap picture = new Bitmap(Image.FromFile("wado.png"), size);
+            float opacity = 0.1f * Opac;
+            picture = SetImageOpacity(picture, opacity);
+            //Bitmap bmp = frame_bitmap;
+            Graphics temp= Graphics.FromImage(frame_bitmap);
+            temp.DrawImage(picture, startX+transX, startY+transY, lengX, lengY);
+            //temp.Dispose();
+            picture.Dispose();
         }
         void DisplayPic(Image<Bgr, Byte> bit, int startX, int endX, int startY, int endY,int multX, int multY,int transX,int transY)
         {
@@ -201,6 +255,12 @@ namespace testing2._0
         {
 
         }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
         public Form1()
         {
             InitializeComponent();
