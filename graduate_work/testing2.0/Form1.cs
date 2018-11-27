@@ -70,7 +70,7 @@ namespace testing2._0
                 {
                     Contour<Point> currentContour = contours.ApproxPoly(contours.Perimeter * 0.05, storage);
 
-                    if (contours.Area > 300 && contours.Area < 1400) //only consider contours with area greater than 700 and lesser than 1200
+                    if (contours.Area > 150 && contours.Area < 1000) //only consider contours with area greater than 700 and lesser than 1200
                     {
                         if (currentContour.Total == 4) //The contour has 4 vertices.
                         {
@@ -248,6 +248,11 @@ namespace testing2._0
         
         private void Form1_Load(object sender, EventArgs e)
         {
+            Bitmap Choise= new Bitmap(Image.FromFile("wado.jpg"), 600, 600);
+            pictureBox1.Width = Choise.Width;
+            pictureBox1.Height = Choise.Height;
+            pictureBox1.Image = Choise;
+                
             Video();
         }
 
@@ -259,6 +264,17 @@ namespace testing2._0
         private void label1_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
+        {
+            textBox1.Text = Convert.ToString(e.X);
+            textBox2.Text = Convert.ToString(e.Y);
         }
 
         public Form1()
