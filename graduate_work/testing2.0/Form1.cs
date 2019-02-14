@@ -29,6 +29,8 @@ namespace testing2._0
         short[] t;
         short[][] g = new short[siteCount][];
         int z = 0, r = 0;
+        double XMin_Ratio,YMin_Ratio;
+        double WidthRatio=1, HeightRatio=1;
 
         //int minX;
         //int maxX;
@@ -177,6 +179,7 @@ namespace testing2._0
                 return null;
             }
         }
+
         void DisplayPicWithOpacity(Image<Bgr, Byte> frame, int startX,int endX, int startY,int endY, int multX, int multY, int transX, int transY,int Opac) {
             Bitmap frame_bitmap = frame.Bitmap;
 
@@ -190,6 +193,14 @@ namespace testing2._0
             picture = SetImageOpacity(picture, opacity);
             //Bitmap bmp = frame_bitmap;
             Graphics temp= Graphics.FromImage(frame_bitmap);
+            #region SomeWork
+            int DeltaX = Convert.ToInt32(Math.Round(WidthRatio * lengX));
+            int DeltaY = Convert.ToInt32(Math.Round(HeightRatio * lengY));
+            startX = startX - DeltaX;
+            startY = startY - DeltaY;
+            lengX= Convert.ToInt32(Math.Round(lengX/WidthRatio));
+            lengY = Convert.ToInt32(Math.Round(lengY / HeightRatio));
+            #endregion
             temp.DrawImage(picture, startX+transX, startY+transY, lengX, lengY);
             //temp.Dispose();
             picture.Dispose();
@@ -275,6 +286,28 @@ namespace testing2._0
         {
             textBox1.Text = Convert.ToString(e.X);
             textBox2.Text = Convert.ToString(e.Y);
+        }
+
+        private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
+        {
+            textBox3.Text = Convert.ToString(e.X);
+            textBox4.Text = Convert.ToString(e.Y);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            #region Convertation
+            int AnchoredXMin = Convert.ToInt32(textBox1.Text);
+            int AnchoredXMax = Convert.ToInt32(textBox3.Text);
+            int AnchoredYMin = Convert.ToInt32(textBox2.Text);
+            int AnchoredYMax = Convert.ToInt32(textBox4.Text);
+            #endregion
+            int AnchoredFrameWidth = Math.Abs(AnchoredXMax - AnchoredXMin);
+            int AnchoredFrameHeight= Math.Abs(AnchoredYMax - AnchoredYMin);
+            XMin_Ratio = AnchoredXMin / AnchoredFrameWidth;
+            YMin_Ratio = AnchoredYMin / AnchoredFrameHeight;
+            WidthRatio = AnchoredFrameWidth / 600;
+            HeightRatio = AnchoredFrameHeight / 600;
         }
 
         public Form1()
