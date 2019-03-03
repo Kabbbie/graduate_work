@@ -30,7 +30,7 @@ namespace testing2._0
         short[][] g = new short[siteCount][];
         int z = 0, r = 0;
         double XMin_Ratio,YMin_Ratio;
-        double WidthRatio=1, HeightRatio=1;
+        double WidthRatio=0.0, HeightRatio=0.0;
 
         //int minX;
         //int maxX;
@@ -194,14 +194,20 @@ namespace testing2._0
             //Bitmap bmp = frame_bitmap;
             Graphics temp= Graphics.FromImage(frame_bitmap);
             #region SomeWork
-            int DeltaX = Convert.ToInt32(Math.Round(WidthRatio * lengX));
-            int DeltaY = Convert.ToInt32(Math.Round(HeightRatio * lengY));
-            startX = startX - DeltaX;
-            startY = startY - DeltaY;
-            lengX= Convert.ToInt32(Math.Round(lengX/WidthRatio));
-            lengY = Convert.ToInt32(Math.Round(lengY / HeightRatio));
+            if (WidthRatio > 0 && HeightRatio > 0)
+            {
+                //int DeltaX = Convert.ToInt32(Math.Round(WidthRatio * lengX));
+                //int DeltaY = Convert.ToInt32(Math.Round(HeightRatio * lengY));
+                int DeltaX = Convert.ToInt32(Math.Round(XMin_Ratio * lengX));
+                int DeltaY = Convert.ToInt32(Math.Round(YMin_Ratio * lengY));
+                startX = startX - DeltaX;
+                startY = startY - DeltaY;
+                lengX = Convert.ToInt32(Math.Round(lengX / WidthRatio));
+                lengY = Convert.ToInt32(Math.Round(lengY / HeightRatio));
+            }
             #endregion
             temp.DrawImage(picture, startX+transX, startY+transY, lengX, lengY);
+            //temp.DrawImage(picture, startX + transX, endY + transY, lengX, lengY);
             //temp.Dispose();
             picture.Dispose();
         }
@@ -288,6 +294,12 @@ namespace testing2._0
             textBox2.Text = Convert.ToString(e.Y);
         }
 
+        private void button2_Click(object sender, EventArgs e)
+        {
+            textBox5.Text = Convert.ToString(WidthRatio);
+            textBox6.Text = Convert.ToString(HeightRatio);
+        }
+
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
             textBox3.Text = Convert.ToString(e.X);
@@ -301,13 +313,20 @@ namespace testing2._0
             int AnchoredXMax = Convert.ToInt32(textBox3.Text);
             int AnchoredYMin = Convert.ToInt32(textBox2.Text);
             int AnchoredYMax = Convert.ToInt32(textBox4.Text);
+            #region UI
+            Graphics UI_graphics;
+            UI_graphics = Graphics.FromImage(pictureBox1.Image);
+            Pen UI_pen = new Pen(Color.Red, 4.0F);
+            UI_graphics.DrawEllipse(UI_pen, AnchoredXMin, AnchoredYMin, 15, 15);
+            UI_graphics.DrawEllipse(UI_pen, AnchoredXMax, AnchoredYMax,15,15);
+            #endregion
             #endregion
             int AnchoredFrameWidth = Math.Abs(AnchoredXMax - AnchoredXMin);
             int AnchoredFrameHeight= Math.Abs(AnchoredYMax - AnchoredYMin);
-            XMin_Ratio = AnchoredXMin / AnchoredFrameWidth;
-            YMin_Ratio = AnchoredYMin / AnchoredFrameHeight;
-            WidthRatio = AnchoredFrameWidth / 600;
-            HeightRatio = AnchoredFrameHeight / 600;
+            XMin_Ratio = (double)AnchoredXMin / AnchoredFrameWidth;
+            YMin_Ratio = (double)AnchoredYMin / AnchoredFrameHeight;
+            WidthRatio = ((double)AnchoredFrameWidth / 600);
+            HeightRatio = ((double)AnchoredFrameHeight / 600);
         }
 
         public Form1()
