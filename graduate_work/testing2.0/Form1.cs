@@ -31,11 +31,8 @@ namespace testing2._0
         int z = 0, r = 0;
         double XMin_Ratio,YMin_Ratio;
         double WidthRatio=0.0, HeightRatio=0.0;
-
-        //int minX;
-        //int maxX;
-        //int minY;
-        //int maxY;
+        int markerCordX=100, markerCordY=200;
+        
 
         int last_yq;
         int last_xq;
@@ -107,6 +104,7 @@ namespace testing2._0
                 Kadr.Draw(box, new Bgr(Color.DarkOrange), 3);
 
             #endregion
+            List<MCvBox2D> triangleList = findTriangles(cannyEdges, Kadr);
             if (boxList.Count > 0)
             {
                 
@@ -133,9 +131,12 @@ namespace testing2._0
                 int trX = trackBar3.Value;
                 int trY = trackBar4.Value;
                 int Opac = trackBar5.Value;
+                
                 if (xq > 0 && yq > 0)
                 {
-                    DisplayPicWithOpacity(Kadr, minX, maxX, minY, maxY, mX, mY, trX, trY, Opac);
+                    displayPictureWithOpacity(Kadr, minX, maxX, minY, maxY, mX, mY, trX, trY, Opac,triangleList);
+                    foreach (MCvBox2D tri in triangleList)
+                        Kadr.Draw(tri, new Bgr(Color.Green), 3);
                 }
                 last_yq = yq;
                 last_xq = xq;
@@ -145,7 +146,53 @@ namespace testing2._0
             
             ib1.Image = Kadr;
         }
-        Bitmap SetImageOpacity(Image image, float opacity)
+        List<MCvBox2D> findTriangles(Image<Gray, Byte> cannyEdges, Image<Bgr, Byte> Kadr) {
+            #region Find rectangles          
+            List<MCvBox2D> triangleList = new List<MCvBox2D>();
+
+            using (MemStorage storage = new MemStorage()) //allocate storage for contour approximation
+                for (Contour<Point> contours = cannyEdges.FindContours(); contours != null; contours = contours.HNext)
+                {
+                    Contour<Point> currentContour = contours.ApproxPoly(contours.Perimeter * 0.05, storage);
+
+                    if (contours.Area > 150 && contours.Area < 1000) //only consider contours with area greater than 700 and lesser than 1200
+                    {
+                        if (currentContour.Total == 3) //The contour has 3 vertices.
+                        {
+                            #region determine if all the angles in the contour are within the range of [0, 180] degree
+                            bool isTriangle = true;
+                            Point[] pts = currentContour.ToArray();
+                            LineSegment2D[] edges = PointCollection.PolyLine(pts, true);
+
+                            for (int i = 0; i < edges.Length; i++)
+                            {
+                                double angle = Math.Abs(
+                                   edges[(i + 1) % edges.Length].GetExteriorAngleDegree(edges[i]));
+                                if (angle < 0 || angle > 180)
+                                {
+                                    isTriangle = false;
+                                    break;
+                                }
+                            }
+                            #endregion
+
+                            if (isTriangle)
+                            {
+                                triangleList.Add(currentContour.GetMinAreaRect());
+                            }
+                        }
+                    }
+                }
+            #endregion
+            //#region draw triangles
+            //Image<Bgr, Byte> triangleRectangleImage = Kadr.Copy();
+            //foreach (MCvBox2D box in triangleList)
+            //    Kadr.Draw(box, new Bgr(Color.Green), 3);
+
+            //#endregion
+            return triangleList;
+        }
+        Bitmap setImageOpacity(Image image, float opacity)
         {
             try
             {
@@ -180,7 +227,11 @@ namespace testing2._0
             }
         }
 
-        void DisplayPicWithOpacity(Image<Bgr, Byte> frame, int startX,int endX, int startY,int endY, int multX, int multY, int transX, int transY,int Opac) {
+        void displayPictureWithOpacity(Image<Bgr, Byte> frame, int startX,int endX, 
+                                        int startY,int endY, 
+                                        int multX, int multY, 
+                                        int transX, int transY,
+                                        int Opac,List<MCvBox2D> triangleList) {
             Bitmap frame_bitmap = frame.Bitmap;
 
             #region Resize
@@ -190,14 +241,12 @@ namespace testing2._0
             Size size = new Size(lengX, lengY);
             Bitmap picture = new Bitmap(Image.FromFile("wado.png"), size);
             float opacity = 0.1f * Opac;
-            picture = SetImageOpacity(picture, opacity);
-            //Bitmap bmp = frame_bitmap;
+            picture = setImageOpacity(picture, opacity);
             Graphics temp= Graphics.FromImage(frame_bitmap);
             #region SomeWork
             if (WidthRatio > 0 && HeightRatio > 0)
             {
-                //int DeltaX = Convert.ToInt32(Math.Round(WidthRatio * lengX));
-                //int DeltaY = Convert.ToInt32(Math.Round(HeightRatio * lengY));
+                
                 int DeltaX = Convert.ToInt32(Math.Round(XMin_Ratio * lengX));
                 int DeltaY = Convert.ToInt32(Math.Round(YMin_Ratio * lengY));
                 startX = startX - DeltaX;
@@ -206,12 +255,23 @@ namespace testing2._0
                 lengY = Convert.ToInt32(Math.Round(lengY / HeightRatio));
             }
             #endregion
+            int tempCordX=0,tempCordY=0;
+            if (triangleList.Count > 0) {
+                if (Convert.ToInt32(triangleList[0].center.X) >= startX) {
+                    tempCordX = startX - Convert.ToInt32(triangleList[0].center.X);
+                    tempCordY = startY - Convert.ToInt32(triangleList[0].center.Y);
+                }
+            }
+            double tempRatioX = (double)(tempCordX / lengX);
+            double tempRatioY = (double)(tempCordY / lengY);
+            //markerCordX = Convert.ToInt32(Math.Round(tempRatioX * 600));
+            //markerCordY = Convert.ToInt32(Math.Round(tempRatioY * 600));
+
+
             temp.DrawImage(picture, startX+transX, startY+transY, lengX, lengY);
-            //temp.DrawImage(picture, startX + transX, endY + transY, lengX, lengY);
-            //temp.Dispose();
             picture.Dispose();
         }
-        void DisplayPic(Image<Bgr, Byte> bit, int startX, int endX, int startY, int endY,int multX, int multY,int transX,int transY)
+        void displayPic(Image<Bgr, Byte> bit, int startX, int endX, int startY, int endY,int multX, int multY,int transX,int transY)
         {
 
             #region Resize
@@ -288,17 +348,27 @@ namespace testing2._0
 
         }
 
+        private void button2_Click(object sender, EventArgs e)
+        {
+            Graphics g = pictureBox1.CreateGraphics();
+
+            g.DrawEllipse(new Pen(Brushes.Green, 7), markerCordX, markerCordY, 15, 15);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            Graphics g = pictureBox1.CreateGraphics();
+
+            g.DrawEllipse(new Pen(Brushes.Green, 7), markerCordX, markerCordY, 15, 15);
+        }
+
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
             textBox1.Text = Convert.ToString(e.X);
             textBox2.Text = Convert.ToString(e.Y);
         }
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-            textBox5.Text = Convert.ToString(WidthRatio);
-            textBox6.Text = Convert.ToString(HeightRatio);
-        }
+        
 
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
@@ -309,17 +379,17 @@ namespace testing2._0
         private void button1_Click(object sender, EventArgs e)
         {
             #region Convertation
-            int AnchoredXMin = Convert.ToInt32(textBox1.Text);
-            int AnchoredXMax = Convert.ToInt32(textBox3.Text);
-            int AnchoredYMin = Convert.ToInt32(textBox2.Text);
-            int AnchoredYMax = Convert.ToInt32(textBox4.Text);
-            #region UI
-            Graphics UI_graphics;
-            UI_graphics = Graphics.FromImage(pictureBox1.Image);
-            Pen UI_pen = new Pen(Color.Red, 4.0F);
-            UI_graphics.DrawEllipse(UI_pen, AnchoredXMin, AnchoredYMin, 15, 15);
-            UI_graphics.DrawEllipse(UI_pen, AnchoredXMax, AnchoredYMax,15,15);
-            #endregion
+                int AnchoredXMin = Convert.ToInt32(textBox1.Text);
+                int AnchoredXMax = Convert.ToInt32(textBox3.Text);
+                int AnchoredYMin = Convert.ToInt32(textBox2.Text);
+                int AnchoredYMax = Convert.ToInt32(textBox4.Text);
+                #region UI
+                    Graphics UI_graphics;
+                    UI_graphics = Graphics.FromImage(pictureBox1.Image);
+                    Pen UI_pen = new Pen(Color.Red, 4.0F);
+                    UI_graphics.DrawEllipse(UI_pen, AnchoredXMin, AnchoredYMin, 15, 15);
+                    UI_graphics.DrawEllipse(UI_pen, AnchoredXMax, AnchoredYMax,15,15);
+                #endregion
             #endregion
             int AnchoredFrameWidth = Math.Abs(AnchoredXMax - AnchoredXMin);
             int AnchoredFrameHeight= Math.Abs(AnchoredYMax - AnchoredYMin);
